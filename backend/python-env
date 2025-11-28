@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# 1. 创建虚拟环境
+python -m venv venv
+
+# 2. 激活虚拟环境 (根据操作系统选择正确的路径)
+if [ -f "venv/bin/activate" ]; then
+    # Linux/macOS/Git Bash
+    source venv/bin/activate
+elif [ -f "venv/Scripts/activate" ]; then
+    # Windows (WSL 或部分环境可能需要)
+    source venv/Scripts/activate
+else
+    echo "错误：无法找到虚拟环境激活脚本。"
+    exit 1
+fi
+
+# 3. 升级 pip
+python -m pip install --upgrade pip
+
+# 4. 安装 black
+pip install black
+
+# 5. 查看当前 Python 解释器路径
+echo ""
+echo -e "\033[1;32m当前使用的 Python 解释器路径：\033[0m"
+echo ""
+where python
+
+# 6. 查看已安装的包
+echo ""
+echo -e "\033[1;32m已安装的包列表：\033[0m"
+echo ""
+pip list
+
+# 7. 显示成功信息
+echo ""
+echo -e "\033[1;32m✅ 虚拟环境已建立并激活。已升级 pip，安装 black。\033[0m"
+echo ""
+
+# 注意：在脚本中执行 source activate 之后，脚本执行完毕，终端**会退出**虚拟环境。
+
+# **如果想要脚本执行后终端保持在激活状态，你需要执行以下命令：**
+# source py-env.sh
