@@ -1,12 +1,15 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_cors import CORS
 from config import Config
 
 # 创建数据库实例
 db = SQLAlchemy()
 # 创建迁移实例
 migrate = Migrate()
+# 创建CORS实例
+cors = CORS()
 
 def create_app(config_class=Config):
     # 创建 Flask 应用
@@ -18,6 +21,8 @@ def create_app(config_class=Config):
     db.init_app(app)
     # 初始化迁移
     migrate.init_app(app, db)
+    # 初始化CORS
+    cors.init_app(app)
 
     # 导入模型，确保SQLAlchemy知道所有模型
     from app import models
