@@ -1,6 +1,11 @@
 # 使用 Python 3.10 作为基础镜像
 FROM python:3.10-slim
 
+# 安装必要的系统依赖，包括 nc
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    netcat-traditional \
+    && rm -rf /var/lib/apt/lists/*
+
 # 设置工作目录
 WORKDIR /app
 

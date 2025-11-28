@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库服务
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password  
+    networks:
+      - todo-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]        
+      timeout: 20s
+      retries: 10
+
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+    restart: always
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DB_HOST: db
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      FLASK_APP: ${FLASK_APP}
+      FLASK_ENV: ${FLASK_ENV}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    networks:
+      - todo-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - todo-network
+
+# 数据库挂载卷
+volumes:
+  mysql_data:
+    driver: local
+
+# 定义网络
+networks:
+  todo-network:
+    driver: bridge
