@@ -16,21 +16,21 @@ function App() {
 
   // 组件挂载时，从API获取初始Todo列表
   useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  // 从API获取Todo列表数据
-  const fetchTodos = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/todos`);
-      if (res.ok) {
-        const data = await res.json();
-        setTodos(data);
+    // 在effect中直接定义异步函数并执行
+    const fetchInitialTodos = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/todos`);
+        if (res.ok) {
+          const data = await res.json();
+          setTodos(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch todos", error);
       }
-    } catch (error) {
-      console.error("Failed to fetch todos", error);
-    }
-  };
+    };
+
+    fetchInitialTodos();
+  }, []);
 
   // 添加新的Todo项
   const handleAdd = async () => {
