@@ -1,23 +1,29 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: todos-react-flask-app
+  name: todos-app
   namespace: argocd
-
 spec:
   project: default
   source:
-    repoURL: https://github.com/Jerrybaijy/todos-fullstack.git
+    repoURL: https://github.com/your-username/todos-fullstack.git
     targetRevision: HEAD
-    path: dev # 指向配置所在的 dev 路径
-
+    path: dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: todos-fullstack # 目标命名空间
-
+    namespace: todos-fullstack
   syncPolicy:
     syncOptions:
-      - CreateNamespace=true 
+    - CreateNamespace=true
     automated:
       selfHeal: true
       prune: true
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
+  - group: apps
+    kind: StatefulSet
+    jsonPointers:
+    - /spec/replicas

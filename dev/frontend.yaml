@@ -1,60 +1,53 @@
-# ====================================================================
-# 前端 Deployment
-# ====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-deployment
-  labels:
-    component: frontend
+  name: frontend
+  namespace: todos-fullstack
 spec:
   replicas: 1
   selector:
     matchLabels:
-      component: frontend
+      app: frontend
   template:
     metadata:
       labels:
-        component: frontend
+        app: frontend
     spec:
       containers:
-      - name: frontend
-        image: jerrybaijy/todos-react-flask-mysql-frontend:latest 
-        ports:
-        - containerPort: 80
-        # 配置后端 API 地址
-        env:
-        - name: REACT_APP_API_URL
-          # 后端 Service 的名称是 backend-service，端口是 5000
-          value: http://backend-service:5000
-        
-        # 修正 COMMAND/ARGS：动态替换 Nginx 配置中的后端地址
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            # 使用 sed 命令将 Nginx 配置中所有 'backend' 替换为 'backend-service'
-            # ⚠️ 注意：这需要您的镜像中有 sed 命令，并且知道配置文件的准确路径
-            sed -i 's/backend:5000/backend-service:5000/g' /etc/nginx/conf.d/nginx.conf
-            
-            # 启动 Nginx (替换为您的镜像实际的启动命令，通常是 Nginx 的默认 ENTRYPOINT)
-            nginx -g 'daemon off;'
-
+        - name: frontend
+          image: jerrybaijy/todos-fullstack-frontend:latest
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
 ---
-# ====================================================================
-# 前端 Service (使用 NodePort 以便在 Minikube 外部访问)
-# ====================================================================
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend-service
-  labels:
-    component: frontend
+  name: frontend
+  namespace: todos-fullstack
 spec:
   selector:
-    component: frontend
-  # 使用 NodePort 类型方便 Minikube 访问
-  type: NodePort 
+    app: frontend
   ports:
-    - protocol: TCP
-      port: 80
+    - port: 80
       targetPort: 80
+      nodePort: 30080
+  type: NodePort
