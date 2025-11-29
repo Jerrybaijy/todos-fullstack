@@ -50,4 +50,5 @@ spec:
   ports:
   - port: 80
     targetPort: 80
-  type: LoadBalancer
+  # 如果公网访问，应将服务类型改为 LoadBalancer
+  type: ClusterIP
