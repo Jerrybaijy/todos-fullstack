@@ -1,0 +1,65 @@
+# 定义变量
+variables:
+  # Docker 版本号
+  DOCKER_VERSION: 24.0.5
+
+  # 告诉 Docker 使用 overlay2 驱动，性能更好
+  DOCKER_DRIVER: overlay2
+
+  # 禁用 TLS 证书生成，防止 dind 连接报错
+  DOCKER_TLS_CERTDIR: ""
+  
+  # 镜像名称前缀，$DOCKER_HUB_USER 是 GitLab 里配置的环境变量
+  IMAGE_PREFIX: $DOCKER_HUB_USER
+  
+  # 项目名称
+  PROJECT_NAME: todos-fullstack
+
+  # 后端和前端名称
+  BACKEND_NAME: backend
+  FRONTEND_NAME: frontend
+
+# 定义阶段
+stages:
+  - build
+
+# 使用 Docker-in-Docker 服务，允许在容器里运行 docker 命令
+services:
+  - docker:$DOCKER_VERSION-dind
+
+# 登录 Docker Hub
+before_script:
+  # 使用 stdin 输入密码，更加安全
+  - echo "$DOCKER_HUB_PASS" | docker login -u "$DOCKER_HUB_USER" --password-stdin
+
+# 构建后端镜像
+build_backend:
+  stage: build
+  image: docker:$DOCKER_VERSION
+  script:
+    # 进入后端目录
+    - cd $BACKEND_NAME
+    
+    # 使用双标签构建：既有版本号（用于回溯），也有 latest（用于生产）
+    - docker build -t $IMAGE_PREFIX/$PROJECT_NAME-$BACKEND_NAME:$CI_COMMIT_SHORT_SHA -t $IMAGE_PREFIX/$PROJECT_NAME-$BACKEND_NAME:latest .
+    
+    # 推送到 Docker Hub
+    - docker push $IMAGE_PREFIX/$PROJECT_NAME-$BACKEND_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $IMAGE_PREFIX/$PROJECT_NAME-$BACKEND_NAME:latest
+  rules:
+    # 只有当 $BACKEND_NAME 目录下有文件变化时，才运行此 Job
+    - changes:
+        - $BACKEND_NAME/**/*
+
+# 构建前端镜像
+build_frontend:
+  stage: build
+  image: docker:$DOCKER_VERSION
+  script:
+    - cd $FRONTEND_NAME
+    - docker build -t $IMAGE_PREFIX/$PROJECT_NAME-$FRONTEND_NAME:$CI_COMMIT_SHORT_SHA -t $IMAGE_PREFIX/$PROJECT_NAME-$FRONTEND_NAME:latest .
+    - docker push $IMAGE_PREFIX/$PROJECT_NAME-$FRONTEND_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $IMAGE_PREFIX/$PROJECT_NAME-$FRONTEND_NAME:latest
+  rules:
+    - changes:
+        - $FRONTEND_NAME/**/*
