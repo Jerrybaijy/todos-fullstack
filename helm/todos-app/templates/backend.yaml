@@ -67,7 +67,7 @@ spec:
           value: {{ include "todos-app.fullname" . }}-mysql
         - name: MYSQL_DATABASE
           valueFrom:
-            configMapRef:
+            configMapKeyRef:
               name: {{ include "todos-app.fullname" . }}-mysql-config
               key: MYSQL_DATABASE
         ports:
