@@ -1,90 +1,105 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: todos-fullstack
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: todos-config
-  namespace: todos-fullstack
-data:
-  MYSQL_DATABASE: todos_db
-  DB_HOST: todos-db
-  FLASK_APP: run.py
-  FLASK_ENV: development
----
+# ====================================================================
+# Secret (存储密码)
+# ====================================================================
 apiVersion: v1
 kind: Secret
 metadata:
-  name: todos-secret
-  namespace: todos-fullstack
+  name: todos-mysql-secret
+  labels:
+    app: todos-app
 type: Opaque
-stringData:
-  MYSQL_ROOT_PASSWORD: 123456
-  MYSQL_USER: jerry
-  MYSQL_PASSWORD: 000000
-  SECRET_KEY: change_this_to_a_very_long_random_string
+data:
+  # MYSQL_ROOT_PASSWORD=123456 (Base64: MTIzNDU2)
+  mysql-root-password: MTIzNDU2
+  # MYSQL_USER=jerry (Base64: amVycnk=)
+  mysql-user: amVycnk=
+  # MYSQL_PASSWORD=000000 (Base64: MDAwMDAw)
+  mysql-password: MDAwMDAw
 ---
+# ====================================================================
+# PersistentVolumeClaim (持久卷声明)
+# ====================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: todos-mysql-pvc
+  labels:
+    app: todos-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# ====================================================================
+# MySQL 数据库 Deployment
+# ====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: todos-db
-  namespace: todos-fullstack
+  name: mysql-db-deployment
+  labels:
+    component: mysql-db
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: todos-db
+      component: mysql-db
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
-        app: todos-db
+        component: mysql-db
     spec:
       containers:
-        - name: mysql
-          image: mysql:8.0
-          ports:
-            - containerPort: 3306
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: todos-secret
-                  key: MYSQL_ROOT_PASSWORD
-            - name: MYSQL_DATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: todos-config
-                  key: MYSQL_DATABASE
-            - name: MYSQL_USER
-              valueFrom:
-                secretKeyRef:
-                  name: todos-secret
-                  key: MYSQL_USER
-            - name: MYSQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: todos-secret
-                  key: MYSQL_PASSWORD
-          args:
-            - --default-authentication-plugin=mysql_native_password
-          volumeMounts:
-            - name: mysql-data
-              mountPath: /var/lib/mysql
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        env:
+        # 从 Secret 引用 root 密码
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todos-mysql-secret
+              key: mysql-root-password
+        # 数据库名 (来自 .env)
+        - name: MYSQL_DATABASE
+          value: todos_db
+        # 从 Secret 引用应用用户和密码
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: todos-mysql-secret
+              key: mysql-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todos-mysql-secret
+              key: mysql-password
+        # 对应 Docker Compose 中的命令
+        args: ["--default-authentication-plugin=mysql_native_password"]
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
       volumes:
-        - name: mysql-data
-          emptyDir: {}
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: todos-mysql-pvc
 ---
+# ====================================================================
+# MySQL Service (名称必须是 'db'，对应后端配置的 DB_HOST)
+# ====================================================================
 apiVersion: v1
 kind: Service
 metadata:
-  name: todos-db
-  namespace: todos-fullstack
+  name: db 
+  labels:
+    component: mysql-db
 spec:
-  selector:
-    app: todos-db
+  type: NodePort
   ports:
-    - port: 3306
-      targetPort: 3306
-  type: ClusterIP
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306

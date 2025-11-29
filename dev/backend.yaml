@@ -1,70 +1,81 @@
+# ====================================================================
+# 后端 Deployment (已修正启动命令)
+# ====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: todos-backend
-  namespace: todos-fullstack
+  name: backend-deployment
+  labels:
+    component: backend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: todos-backend
+      component: backend
   template:
     metadata:
       labels:
-        app: todos-backend
+        component: backend
     spec:
       containers:
       - name: backend
-        image: jerrybaij/todos-fullstack-backend:latest
+        image: jerrybaijy/todos-react-flask-mysql-backend:latest 
         ports:
-        - containerPort: 5000
+        - containerPort: 5000 
+        
+        # 执行 boot.sh 的全部逻辑
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            # 1. 健壮的等待 MySQL 数据库可用 (db 是 MySQL Service 的名称)
+            echo "Waiting for MySQL database (db:3306) to be ready..."
+            while ! nc -z db 3306; do 
+              sleep 1
+            done
+            echo "MySQL is ready."
+            
+            # 2. 数据库迁移 (来自 boot.sh)
+            echo "Running database migrations..."
+            flask db upgrade
+            
+            # 3. 启动 Gunicorn 服务器 (来自 boot.sh)
+            echo "Starting Gunicorn..."
+            # 使用 boot.sh 中完整的启动参数
+            exec gunicorn -b :5000 --access-logfile - --error-logfile - run:app
         env:
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: todos-secret
-              key: SECRET_KEY
+        # DB_HOST 引用 MySQL Service 的名称 'db'
+        - name: DB_HOST
+          value: db 
+        # 从 Secret 引用数据库用户和密码
         - name: MYSQL_USER
           valueFrom:
             secretKeyRef:
-              name: todos-secret
-              key: MYSQL_USER
+              name: todos-mysql-secret
+              key: mysql-user
         - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: todos-secret
-              key: MYSQL_PASSWORD
-        - name: DB_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: todos-config
-              key: DB_HOST
+              name: todos-mysql-secret
+              key: mysql-password
         - name: MYSQL_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: todos-config
-              key: MYSQL_DATABASE
-        - name: FLASK_APP
-          valueFrom:
-            configMapKeyRef:
-              name: todos-config
-              key: FLASK_APP
-        - name: FLASK_ENV
-          valueFrom:
-            configMapKeyRef:
-              name: todos-config
-              key: FLASK_ENV
-        imagePullPolicy: IfNotPresent
+          value: todos_db
+        - name: SECRET_KEY
+          value: "change_this_to_a_very_long_random_string" 
+
 ---
+# ====================================================================
+# 后端 Service
+# ====================================================================
 apiVersion: v1
 kind: Service
 metadata:
-  name: todos-backend
-  namespace: todos-fullstack
+  name: backend-service
+  labels:
+    component: backend
 spec:
   selector:
-    app: todos-backend
+    component: backend
   ports:
-  - port: 5000
-    targetPort: 5000
-  type: ClusterIP
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
