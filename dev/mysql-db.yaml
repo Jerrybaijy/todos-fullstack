@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: todos-fullstack
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todos-config
+  namespace: todos-fullstack
+data:
+  MYSQL_DATABASE: todos_db
+  DB_HOST: todos-db
+  FLASK_APP: run.py
+  FLASK_ENV: development
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: todos-secret
+  namespace: todos-fullstack
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: 123456
+  MYSQL_USER: jerry
+  MYSQL_PASSWORD: 000000
+  SECRET_KEY: change_this_to_a_very_long_random_string
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todos-db
+  namespace: todos-fullstack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todos-db
+  template:
+    metadata:
+      labels:
+        app: todos-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todos-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: todos-config
+                  key: MYSQL_DATABASE
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: todos-secret
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todos-secret
+                  key: MYSQL_PASSWORD
+          args:
+            - --default-authentication-plugin=mysql_native_password
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todos-db
+  namespace: todos-fullstack
+spec:
+  selector:
+    app: todos-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
