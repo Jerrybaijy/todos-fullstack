@@ -1,53 +1,51 @@
+# ====================================================================
+# 前端 Deployment
+# ====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
-  namespace: todos-fullstack
+  name: frontend-deployment
+  labels:
+    component: frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: frontend
+      component: frontend
   template:
     metadata:
       labels:
-        app: frontend
+        component: frontend
     spec:
       containers:
-        - name: frontend
-          image: jerrybaijy/todos-fullstack-frontend:latest
-          ports:
-            - containerPort: 80
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 5
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
+      - name: frontend
+        image: jerrybaijy/todos-fullstack-frontend:latest 
+        ports:
+        - containerPort: 80
+        # 配置后端 API 地址
+        env:
+        - name: REACT_APP_API_URL
+          # 后端 Service 的名称是 backend-service，端口是 5000
+          value: http://backend-service:5000
+        
+        
+
 ---
+# ====================================================================
+# 前端 Service (使用 NodePort 以便在 Minikube 外部访问)
+# ====================================================================
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
-  namespace: todos-fullstack
+  name: frontend-service
+  labels:
+    component: frontend
 spec:
   selector:
-    app: frontend
+    component: frontend
+  # 使用 NodePort 类型方便 Minikube 访问
+  type: NodePort 
   ports:
-    - port: 80
+    - protocol: TCP
+      port: 80
       targetPort: 80
-      nodePort: 30080
-  type: NodePort

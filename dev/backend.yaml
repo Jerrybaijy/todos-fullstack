@@ -1,67 +1,62 @@
+# ====================================================================
+# 后端 Deployment (已修正启动命令)
+# ====================================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
-  namespace: todos-fullstack
+  name: backend-deployment
+  labels:
+    component: backend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      component: backend
   template:
     metadata:
       labels:
-        app: backend
+        component: backend
     spec:
       containers:
-        - name: backend
-          image: jerrybaijy/todos-fullstack-backend:latest
-          ports:
-            - containerPort: 5000
-          env:
-            - name: SECRET_KEY
-              value: "your-secret-key"
-            - name: MYSQL_USER
-              value: "todo_user"
-            - name: MYSQL_PASSWORD
-              value: "todo_password"
-            - name: DB_HOST
-              value: "mysql"
-            - name: MYSQL_DATABASE
-              value: "todos_db"
-            - name: FLASK_APP
-              value: "run.py"
-            - name: FLASK_ENV
-              value: "production"
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 5000
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 5
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
+      - name: backend
+        image: jerrybaijy/todos-fullstack-backend:latest 
+        ports:
+        - containerPort: 5000 
+        
+        env:
+        # DB_HOST 引用 MySQL Service 的名称 'db'
+        - name: DB_HOST
+          value: db 
+        # 从 Secret 引用数据库用户和密码
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: todos-mysql-secret
+              key: mysql-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todos-mysql-secret
+              key: mysql-password
+        - name: MYSQL_DATABASE
+          value: todos_db
+        - name: SECRET_KEY
+          value: "change_this_to_a_very_long_random_string" 
+
 ---
+# ====================================================================
+# 后端 Service
+# ====================================================================
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
-  namespace: todos-fullstack
+  name: backend-service
+  labels:
+    component: backend
 spec:
   selector:
-    app: backend
+    component: backend
   ports:
-    - port: 5000
+    - protocol: TCP
+      port: 5000
       targetPort: 5000
-  type: ClusterIP
