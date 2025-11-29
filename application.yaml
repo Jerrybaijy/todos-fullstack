@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/your-username/todos-fullstack.git
+    repoURL: https://github.com/Jerrybaijy/todos-fullstack.git
     targetRevision: HEAD
     path: dev
   destination:
