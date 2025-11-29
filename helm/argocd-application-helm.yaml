@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: todos-app-helm
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/yourusername/todos-fullstack.git
+    targetRevision: HEAD
+    path: helm/todos-app
+    helm:
+      values: |
+        mysql:
+          rootPassword: rootpassword
+          database: todos_db
+          user: todosuser
+          password: todospassword
+        backend:
+          secretKey: your-secret-key
+          image:
+            repository: yourusername/backend
+            tag: latest
+        frontend:
+          image:
+            repository: yourusername/frontend
+            tag: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: todos-helm
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+    - CreateNamespace=true
+    - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff: {
+        duration: "5s",
+        factor: 2,
+        maxDuration: "3m"
+      }
