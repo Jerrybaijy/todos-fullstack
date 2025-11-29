@@ -79,7 +79,7 @@ function App() {
 
   return (
     <div className="container">
-      <h1>My Todo List</h1>
+      <h1>Todo List</h1>
 
       {/* 输入区域：添加新Todo */}
       <div className="input-group">
