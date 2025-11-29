@@ -22,26 +22,6 @@ spec:
         image: jerrybaijy/todos-react-flask-mysql-backend:latest 
         ports:
         - containerPort: 5000 
-        
-        # 执行 boot.sh 的全部逻辑
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            # 1. 健壮的等待 MySQL 数据库可用 (db 是 MySQL Service 的名称)
-            echo "Waiting for MySQL database (db:3306) to be ready..."
-            while ! nc -z db 3306; do 
-              sleep 1
-            done
-            echo "MySQL is ready."
-            
-            # 2. 数据库迁移 (来自 boot.sh)
-            echo "Running database migrations..."
-            flask db upgrade
-            
-            # 3. 启动 Gunicorn 服务器 (来自 boot.sh)
-            echo "Starting Gunicorn..."
-            # 使用 boot.sh 中完整的启动参数
-            exec gunicorn -b :5000 --access-logfile - --error-logfile - run:app
         env:
         # DB_HOST 引用 MySQL Service 的名称 'db'
         - name: DB_HOST
