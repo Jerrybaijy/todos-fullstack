@@ -8,7 +8,7 @@ from config import Config
 db = SQLAlchemy()
 # 创建迁移实例
 migrate = Migrate()
-# 创建CORS实例
+# 创建 CORS 实例，使用 flask-cors 库启用了跨域资源共享，允许前端跨域请求
 cors = CORS()
 
 def create_app(config_class=Config):
