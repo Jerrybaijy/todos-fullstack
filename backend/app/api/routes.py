@@ -4,6 +4,7 @@ from app.models import Todo
 from app.api import bp
 
 # 获取所有 TODOs
+# 在 __init__.py 中注册了 /api 前缀，此处实际路径为 /api/todos
 @bp.route('/todos', methods=['GET'])
 def get_todos():
     todos = Todo.query.all()

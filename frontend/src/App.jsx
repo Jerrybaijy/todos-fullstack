@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 
-// 使用环境变量管理API地址，默认值为"/api"
+// 允许使用环境变量管理 API 地址，默认值为"/api"
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 /**
