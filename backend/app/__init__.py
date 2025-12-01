@@ -11,6 +11,7 @@ migrate = Migrate()
 # 创建 CORS 实例，使用 flask-cors 库启用了跨域资源共享，允许前端跨域请求
 cors = CORS()
 
+
 def create_app(config_class=Config):
     # 创建 Flask 应用
     app = Flask(__name__)
@@ -26,9 +27,10 @@ def create_app(config_class=Config):
 
     # 导入模型，确保SQLAlchemy知道所有模型
     from app import models
-    
+
     # 注册蓝图
     from app.api import bp as api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
+
+    app.register_blueprint(api_bp, url_prefix="/api")
 
     return app
