@@ -15,9 +15,9 @@ metadata:
   namespace: todos
 type: Opaque
 stringData:
-  MYSQL_ROOT_PASSWORD: 123456
+  MYSQL_ROOT_PASSWORD: "123456"
   MYSQL_USER: jerry
-  MYSQL_PASSWORD: 000000
+  MYSQL_PASSWORD: "000000"
 ---
 apiVersion: apps/v1
 kind: Deployment
