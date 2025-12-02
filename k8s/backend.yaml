@@ -27,29 +27,13 @@ spec:
       containers:
         - name: backend
           image: jerrybaijy/todos-fullstack-backend:latest
-          env:
-            - name: SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: backend-secret
-                  key: SECRET_KEY
-            - name: MYSQL_USER
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: MYSQL_USER
-            - name: MYSQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: MYSQL_PASSWORD
-            - name: DB_HOST
-              value: mysql
-            - name: MYSQL_DATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: mysql-config
-                  key: MYSQL_DATABASE
+          envFrom:
+            - secretRef:
+                name: backend-secret
+            - configMapRef:
+                name: mysql-config
+            - secretRef:
+                name: mysql-secret
           ports:
             - containerPort: 5000
           readinessProbe:
